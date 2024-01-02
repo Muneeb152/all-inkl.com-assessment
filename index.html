@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Visualization Web App</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body class="container mt-5">
+    <h1 class="mb-4">MySQL Data</h1>
+    <!-- Form for database connection details -->
+    <form id="databaseForm">
+        <div class="mb-3">
+            <label for="host" class="form-label">MySQL Host:</label>
+            <input type="text" class="form-control" id="host" name="host" required>
+        </div>
+        <div class="mb-3">
+            <label for="username" class="form-label">MySQL Username:</label>
+            <input type="text" class="form-control" id="username" name="username" required>
+        </div>
+        <div class="mb-3">
+            <label for="password" class="form-label">MySQL Password:</label>
+            <input type="password" class="form-control" id="password" name="password" required>
+        </div>
+        <div class="mb-3">
+            <label for="database" class="form-label">MySQL Database:</label>
+            <input type="text" class="form-control" id="database" name="database" required>
+        </div>
+        <div class="mb-3">
+            <label for="query" class="form-label">MySQL Query:</label>
+            <textarea class="form-control" id="query" name="query" rows="3"
+                placeholder="Enter your MySQL query here"></textarea>
+        </div>
+        <button type="button" class="btn btn-primary" onclick="queryData()">Search</button>
+    </form>
+
+    <!-- Graph Start here -->
+    <div id="graph" class="mt-4"></div>
+    <!-- Bootstrap JS and Popper.js -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script>
+        document.getElementById("databaseForm").addEventListener("submit", function (event) {
+            event.preventDefault();
+            queryData();
+        });
+
+        function queryData() {
+            // Implement AJAX request to send form data to the server
+            var formData = new FormData(document.getElementById('databaseForm'));
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', 'request.php', true);
+            xhr.onload = function () {
+                try {
+                    var responseData = JSON.parse(this.responseText);
+                    if (responseData.error) {
+                        // Handle the error, display an error message, or take appropriate action
+                        console.error(responseData.error);
+                        showError(responseData.error);
+                    } else {
+                        // Data is valid, proceed to visualize it
+                        drawChart(responseData);
+                    }
+                } catch (error) {
+                    // JSON parse error, handle it
+                    console.error('Error parsing JSON:', error);
+                    showError('Error parsing JSON');
+                }
+            };
+            xhr.onerror = function () {
+                // Handle network errors
+                console.error('Network error');
+                showError('Network error');
+            };
+            xhr.send(formData);
+        }
+        function showError(errorMessage) {
+            // Display the error message instead of the graph
+            document.getElementById('graph').innerHTML = '<p class="text-danger">' + errorMessage + '</p>';
+        }
+        google.charts.load('current', { 'packages': ['corechart'] });
+        google.charts.setOnLoadCallback(drawChart);
+        function drawChart(data) {
+            var dataTable = new google.visualization.DataTable();
+            dataTable.addColumn('string', 'Label');
+            dataTable.addColumn('number', 'Value');
+
+            data.forEach(function (item) {
+                dataTable.addRow([item.label, parseFloat(item.value)]);
+            });
+
+            var options = {
+                title: 'Data Visualization',
+                width: 600,
+                height: 400,
+                curveType: 'function',
+            };
+
+            var chart = new google.visualization.LineChart(document.getElementById('graph'));
+            chart.draw(dataTable, options);
+        }
+
+    </script>
+</body>
+
+</html>
